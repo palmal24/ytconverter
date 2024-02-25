@@ -1,9 +1,9 @@
 import os
+import logging
 
-from pytube import YouTube as __youtube
+from pytube import YouTube as youtube
 from abc import ABC, abstractmethod
 
-# from moviepy.editor import VideoFileClip
 
 """
     TODO: implement video options properties
@@ -18,8 +18,9 @@ __all__ = ["YoutubeAudioConverter",
 
 class __FileConverter(ABC):
     
-    def __init__(self, url):
-        self.video = __youtube(url)
+    def __init__(self, url, video_format):
+        self.video = youtube(url)
+        self.video_format = video_format
     
     @abstractmethod
     def change_file_extension(self, filename):
@@ -45,16 +46,32 @@ class YoutubeAudioConverter(__FileConverter):
         stream.download()
         return stream.default_filename
     
-    
     def convert(self) -> str:
-        print("test2")
         try:
             self.change_file_extension(self.download_video())
             return "Successful audio conversion"
         except Exception as e:
+            logging.error("Error during audio conversion: %s", e)
             return "Error parsing file/link"
 
 
-
 class YoutubeVideoConverter(__FileConverter):
-    pass
+    
+    def download_video(self):
+        resolution = self.video_format
+        stream = self.video.streams.get_by_itag(resolution)
+        stream.download()
+        return stream.default_filename
+
+    def convert(self) -> str:
+        try:
+            if self.download_video():
+                return "Successful video conversion"
+            else:
+                return "Error during downloading video file"
+        except Exception as e:
+            logging.error("Error during video conversion: %s", e)
+            return "Error during video download"
+    
+    def change_file_extension(self, filename):
+        pass
